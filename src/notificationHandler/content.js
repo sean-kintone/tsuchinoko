@@ -25,6 +25,8 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
 
         let shouldReprocess = false;
         for (const mutation of mutations) {
+            if (mutation.target.classList.contains('notification-wrapper')) continue;
+            
             if (mutation.type === 'childList') {
                 const addedNodes = Array.from(mutation.addedNodes);
                 const removedNodes = Array.from(mutation.removedNodes);
@@ -38,7 +40,7 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
             }
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                 const target = mutation.target;
-                if (target.classList.contains('ocean-ntf-ntfitem')) {
+                if (target.classList.contains('ocean-ntf-ntfitem') && !target.classList.contains('modified-notification')) {
                     const id = target.id;
                     const { isRead, isImportant } = extractNotificationInfo(target);
                     const oldState = getCurrentState().get(id);
@@ -76,25 +78,7 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
     }).observe(document, {subtree: true, childList: true});
 }
 
-// Observe for changes and update notifications if necessary
-const uiObserver = new MutationObserver((mutations) => {
-    if (isModifying) return;
-
-    for (const mutation of mutations) {
-        if (mutation.type === 'childList' &&
-            (mutation.target.classList.contains('ocean-ntf-ntflist-content') ||
-                mutation.target.closest('.ocean-ntf-ntflist-content'))) {
-            console.log('UI changed, updating notifications...');
-            updateNotifications();
-            break;
-        }
-    }
-});
-
-uiObserver.observe(document.body, {
-    childList: true,
-    subtree: true
-});
+// We don't need the uiObserver anymore, so it has been removed
 
 // Update notifications on window resize
 window.addEventListener('resize', () => {
