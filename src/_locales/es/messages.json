@@ -1,0 +1,12 @@
+{
+  "APPNAME": {
+    "message": "Posta los kintone"
+  },
+  "APPDESC": {
+    "message": "bueno"
+  },
+  "HELLO": {
+    "message": "Hola",
+    "description": "Greeting message"
+  }
+}

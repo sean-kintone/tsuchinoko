@@ -1,0 +1,12 @@
+{
+  "APPNAME": {
+    "message": "Kintone Extension Test"
+  },
+  "APPDESC": {
+    "message": "Posts a message to sean's kintone"
+  },
+  "HELLO": {
+    "message": "Hello",
+    "description": "Greeting message"
+  }
+}

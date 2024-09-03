@@ -1,0 +1,12 @@
+{
+  "APPNAME": {
+    "message": "KintoneにPOSTする"
+  },
+  "APPDESC": {
+    "message": "良い"
+  },
+  "HELLO": {
+    "message": "こんにちは",
+    "description": "Greeting message"
+  }
+}
