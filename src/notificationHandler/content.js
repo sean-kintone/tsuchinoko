@@ -1,5 +1,5 @@
 import { processNotifications, updateCurrentState, getCurrentState, extractNotificationInfo } from './handleNotificationData.js';
-import { createOverlay, updateOverlay } from './createUI.js';
+import { modifyNotifications, updateNotifications, isModifying } from './createUI.js';
 
 if (window.location.href.includes('/k/#/ntf/mention')) {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -10,16 +10,31 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
         }
     });
 
+    function initializeNotifications() {
+        console.log('Initializing notifications...');
+        processNotifications();
+        updateCurrentState();
+        modifyNotifications();
+    }
+
     // Initial processing and state update
-    processNotifications();
-    updateCurrentState();
+    initializeNotifications();
 
     const observer = new MutationObserver((mutations) => {
+        if (isModifying) return;
+
         let shouldReprocess = false;
         for (const mutation of mutations) {
             if (mutation.type === 'childList') {
-                shouldReprocess = true;
-                break;
+                const addedNodes = Array.from(mutation.addedNodes);
+                const removedNodes = Array.from(mutation.removedNodes);
+                if (addedNodes.some(node => node.nodeType === Node.ELEMENT_NODE && 
+                    (node.classList.contains('ocean-ntf-ntfitem') || node.querySelector('.ocean-ntf-ntfitem'))) ||
+                    removedNodes.some(node => node.nodeType === Node.ELEMENT_NODE && 
+                    (node.classList.contains('ocean-ntf-ntfitem') || node.querySelector('.ocean-ntf-ntfitem')))) {
+                    shouldReprocess = true;
+                    break;
+                }
             }
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                 const target = mutation.target;
@@ -36,8 +51,7 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
         }
         if (shouldReprocess) {
             console.log('Notifications updated, reprocessing...');
-            processNotifications();
-            updateCurrentState();
+            initializeNotifications();
         }
     });
 
@@ -47,19 +61,31 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
         attributes: true,
         attributeFilter: ['class']
     });
+
+    // Observe for changes in the URL
+    let lastUrl = location.href; 
+    new MutationObserver(() => {
+        const url = location.href;
+        if (url !== lastUrl) {
+            lastUrl = url;
+            if (url.includes('/k/#/ntf/mention')) {
+                console.log('Notification page loaded, initializing...');
+                initializeNotifications();
+            }
+        }
+    }).observe(document, {subtree: true, childList: true});
 }
 
-// Initial creation of overlay
-createOverlay();
-
-// Observe for changes and update overlay if necessary
+// Observe for changes and update notifications if necessary
 const uiObserver = new MutationObserver((mutations) => {
+    if (isModifying) return;
+
     for (const mutation of mutations) {
         if (mutation.type === 'childList' &&
             (mutation.target.classList.contains('ocean-ntf-ntflist-content') ||
                 mutation.target.closest('.ocean-ntf-ntflist-content'))) {
-            createOverlay();
-            updateOverlay();
+            console.log('UI changed, updating notifications...');
+            updateNotifications();
             break;
         }
     }
@@ -67,10 +93,13 @@ const uiObserver = new MutationObserver((mutations) => {
 
 uiObserver.observe(document.body, {
     childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['style']
+    subtree: true
 });
 
-// Update overlay on window resize
-window.addEventListener('resize', updateOverlay);
+// Update notifications on window resize
+window.addEventListener('resize', () => {
+    console.log('Window resized, updating notifications...');
+    updateNotifications();
+});
+
+console.log('Content script loaded and running.');
