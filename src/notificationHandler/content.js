@@ -25,7 +25,7 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
 
         let shouldReprocess = false;
         for (const mutation of mutations) {
-            if (mutation.target.classList.contains('notification-wrapper')) continue;
+            if (mutation.target.classList.contains('notification-list')) continue;
             
             if (mutation.type === 'childList') {
                 const addedNodes = Array.from(mutation.addedNodes);
@@ -53,7 +53,7 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
         }
         if (shouldReprocess) {
             console.log('Notifications updated, reprocessing...');
-            initializeNotifications();
+            updateNotifications();
         }
     });
 
@@ -77,13 +77,5 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
         }
     }).observe(document, {subtree: true, childList: true});
 }
-
-// We don't need the uiObserver anymore, so it has been removed
-
-// Update notifications on window resize
-window.addEventListener('resize', () => {
-    console.log('Window resized, updating notifications...');
-    updateNotifications();
-});
 
 console.log('Content script loaded and running.');

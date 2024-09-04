@@ -8,14 +8,13 @@ function createSidePanel() {
     sidePanel.className = 'notification-side-panel';
     sidePanel.style.cssText = `
         position: relative;
-        left: 0;
-        top: 0;
-        bottom: 0;
+        float: left;
         width: 250px;
+        height: 100vh;
         background-color: #f0f0f0;
         border-right: 1px solid #ccc;
         padding: 20px;
-        overflow-y: auto;
+        box-sizing: border-box;
     `;
 
     sidePanel.innerHTML = `
@@ -35,108 +34,162 @@ export function modifyNotifications() {
     isModifying = true;
 
     const notificationContainer = document.querySelector('.ocean-ntf-ntflist-content');
-    if (notificationContainer && !sideBarAdded) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'notification-wrapper';
-        wrapper.style.cssText = `
-            display: flex;
-            width: 100%;
-            height: 100vh;
-        `;
+    if (!notificationContainer) {
+        isModifying = false;
+        return;
+    }
 
+    if (!sideBarAdded) {
         const sidePanel = createSidePanel();
         if (sidePanel) {
-            wrapper.appendChild(sidePanel);
+            notificationContainer.insertBefore(sidePanel, notificationContainer.firstChild);
             sideBarAdded = true;
         }
+    }
 
-        notificationContainer.style.cssText = `
-            display: flex;
-            flex-direction: column;
-            width: calc(100% - 250px);
+    notificationContainer.style.cssText = `
+        display: flex;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    `;
+
+    let notificationList = notificationContainer.querySelector('.notification-list');
+    if (!notificationList) {
+        notificationList = document.createElement('div');
+        notificationList.className = 'notification-list';
+        notificationList.style.cssText = `
+            flex-grow: 1;
             overflow-y: auto;
             padding: 20px;
             box-sizing: border-box;
-            height: auto !important;
         `;
-
-        notificationContainer.parentNode.insertBefore(wrapper, notificationContainer);
-        wrapper.appendChild(notificationContainer);
+        notificationContainer.appendChild(notificationList);
     }
 
     const notifications = document.querySelectorAll('.ocean-ntf-ntfitem:not(.modified-notification)');
     notifications.forEach(notification => {
-        notification.classList.add('modified-notification');
-
-        notification.style.cssText = `
-            position: static;
-            width: 100%;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            padding: 15px;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            background-color: #ffffff;
-        `;
-
-        const contentIconContainer = document.createElement('div');
-        contentIconContainer.className = 'content-icon-container';
-        contentIconContainer.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; position: static;';
-
-        const mainContent = document.createElement('div');
-        mainContent.className = 'main-content';
-        mainContent.style.cssText = 'flex-grow: 1; position: static;';
-
-        const iconContainer = document.createElement('div');
-        iconContainer.className = 'icon-container';
-        iconContainer.style.cssText = 'display: flex; align-items: center; position: static;';
-
-        ['subject', 'space', 'detail'].forEach(className => {
-            const element = notification.querySelector(`.ocean-ntf-ntfitem-${className}`);
-            if (element) {
-                element.style.cssText = `margin-bottom: 5px; ${className === 'subject' ? 'font-weight: bold;' : ''} position: static;`;
-                mainContent.appendChild(element);
-            }
-        });
-
-        ['flag', 'mark'].forEach(className => {
-            const element = notification.querySelector(`.ocean-ntf-ntfitem-${className}`);
-            if (element) {
-                element.style.cssText = 'width: 24px; height: 24px; margin-right: 5px; cursor: pointer; position: static;';
-                iconContainer.appendChild(element);
-            }
-        });
-
-        contentIconContainer.appendChild(mainContent);
-        contentIconContainer.appendChild(iconContainer);
-
-        const metaContainer = document.createElement('div');
-        metaContainer.className = 'notification-meta';
-        metaContainer.style.cssText = 'display: flex; justify-content: flex-start; align-items: center; margin-top: 5px; position: static;';
-
-        ['date', 'user'].forEach(className => {
-            const element = notification.querySelector(`.ocean-ntf-ntfitem-${className}`);
-            if (element) {
-                element.style.cssText = `${className === 'date' ? 'margin-right: 10px;' : ''} position: static;`;
-                metaContainer.appendChild(element);
-            }
-        });
-
-        notification.innerHTML = '';
-        notification.appendChild(contentIconContainer);
-        notification.appendChild(metaContainer);
-
-        Array.from(notification.querySelectorAll('*')).forEach(child => {
-            if (getComputedStyle(child).position === 'absolute') {
-                child.style.position = 'static';
-            }
-        });
+        modifySingleNotification(notification);
+        notificationList.appendChild(notification);
     });
 
     isModifying = false;
 }
 
-export function updateNotifications() {
-    modifyNotifications();
+function modifySingleNotification(notification) {
+    notification.classList.add('modified-notification');
+
+    notification.style.cssText = `
+        position: relative;
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+        margin-bottom: 10px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        background-color: #ffffff;
+        min-height: 150px; /* Adjust as needed */
+    `;
+
+    const contentIconContainer = document.createElement('div');
+    contentIconContainer.className = 'content-icon-container';
+    contentIconContainer.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; width: 100%; flex-grow: 1;';
+
+    const mainContent = document.createElement('div');
+    mainContent.className = 'main-content';
+    mainContent.style.cssText = 'flex-grow: 1; margin-right: 20px;';
+
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'icon-container';
+    iconContainer.style.cssText = `
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+    `;
+
+    ['subject', 'space', 'detail'].forEach(className => {
+        const element = notification.querySelector(`.ocean-ntf-ntfitem-${className}`);
+        if (element) {
+            element.style.cssText = `margin-bottom: 5px; ${className === 'subject' ? 'font-weight: bold;' : ''}`;
+            mainContent.appendChild(element);
+        }
+    });
+
+    ['flag', 'mark'].forEach(className => {
+        const element = notification.querySelector(`.ocean-ntf-ntfitem-${className}`);
+        if (element) {
+            element.style.cssText = `
+                margin-bottom: 10px;
+                cursor: pointer;
+                opacity: 1 !important;
+                visibility: visible !important;
+                display: block;
+            `;
+            element.onmouseenter = null;
+            element.onmouseleave = null;
+            iconContainer.appendChild(element);
+        }
+    });
+
+    contentIconContainer.appendChild(mainContent);
+    contentIconContainer.appendChild(iconContainer);
+
+    const metaContainer = document.createElement('div');
+    metaContainer.className = 'notification-meta';
+    metaContainer.style.cssText = `
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        margin-top: 10px;
+        width: 100%;
+    `;
+
+    ['date', 'user'].forEach(className => {
+        const element = notification.querySelector(`.ocean-ntf-ntfitem-${className}`);
+        if (element) {
+            element.style.cssText = `${className === 'date' ? 'margin-right: 10px;' : ''}`;
+            metaContainer.appendChild(element);
+        }
+    });
+
+    notification.innerHTML = '';
+    notification.appendChild(contentIconContainer);
+    notification.appendChild(metaContainer);
 }
+
+export function updateNotifications() {
+    const notificationContainer = document.querySelector('.ocean-ntf-ntflist-content');
+    if (!notificationContainer) return;
+
+    const notificationList = notificationContainer.querySelector('.notification-list');
+    if (!notificationList) return;
+
+    const notifications = notificationContainer.querySelectorAll('.ocean-ntf-ntfitem');
+    notifications.forEach(notification => {
+        notification.classList.remove('modified-notification');
+        modifySingleNotification(notification);
+        notificationList.appendChild(notification);
+    });
+}
+
+// Debounce function to limit the rate of function calls
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Debounced version of updateNotifications
+const debouncedUpdateNotifications = debounce(updateNotifications, 250);
+
+// Add event listener for window resize
+window.addEventListener('resize', debouncedUpdateNotifications);
