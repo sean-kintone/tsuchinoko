@@ -1,5 +1,5 @@
-import { processNotifications, updateCurrentState, getCurrentState, extractNotificationInfo } from './handleNotificationData.js';
-import { modifyNotifications, updateNotifications, isModifying } from './createUI.js';
+import { fetchNotifications, updateCurrentState, debouncedFetchNotifications } from './handleNotificationData.js';
+import { initializeUI, updateUI } from './createUI.js';
 
 if (window.location.href.includes('/k/#/ntf/mention')) {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -10,59 +10,38 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
         }
     });
 
-    function initializeNotifications() {
+    async function initializeNotifications() {
         console.log('Initializing notifications...');
-        processNotifications();
-        updateCurrentState();
-        modifyNotifications();
+        try {
+            const { notifications, senders } = await fetchNotifications();
+            if (notifications && senders) {
+                updateCurrentState(notifications);
+                initializeUI(notifications, senders);
+            } else {
+                console.error('Failed to fetch notifications or senders');
+            }
+        } catch (error) {
+            console.error('Failed to initialize notifications:', error);
+        }
     }
 
     // Initial processing and state update
     initializeNotifications();
 
-    const observer = new MutationObserver((mutations) => {
-        if (isModifying) return;
-
-        let shouldReprocess = false;
-        for (const mutation of mutations) {
-            if (mutation.target.classList.contains('notification-list')) continue;
-            
-            if (mutation.type === 'childList') {
-                const addedNodes = Array.from(mutation.addedNodes);
-                const removedNodes = Array.from(mutation.removedNodes);
-                if (addedNodes.some(node => node.nodeType === Node.ELEMENT_NODE && 
-                    (node.classList.contains('ocean-ntf-ntfitem') || node.querySelector('.ocean-ntf-ntfitem'))) ||
-                    removedNodes.some(node => node.nodeType === Node.ELEMENT_NODE && 
-                    (node.classList.contains('ocean-ntf-ntfitem') || node.querySelector('.ocean-ntf-ntfitem')))) {
-                    shouldReprocess = true;
-                    break;
-                }
+    // Update notifications periodically
+    setInterval(async () => {
+        try {
+            const { notifications, senders } = await debouncedFetchNotifications();
+            if (notifications && senders) {
+                updateCurrentState(notifications);
+                updateUI(notifications, senders);
+            } else {
+                console.error('Failed to fetch notifications or senders during update');
             }
-            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                const target = mutation.target;
-                if (target.classList.contains('ocean-ntf-ntfitem') && !target.classList.contains('modified-notification')) {
-                    const id = target.id;
-                    const { isRead, isImportant } = extractNotificationInfo(target);
-                    const oldState = getCurrentState().get(id);
-                    if (!oldState || oldState.isRead !== isRead || oldState.isImportant !== isImportant) {
-                        shouldReprocess = true;
-                        break;
-                    }
-                }
-            }
+        } catch (error) {
+            console.error('Failed to update notifications:', error);
         }
-        if (shouldReprocess) {
-            console.log('Notifications updated, reprocessing...');
-            updateNotifications();
-        }
-    });
-
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['class']
-    });
+    }, 30000); // Check every 30 seconds
 
     // Observe for changes in the URL
     let lastUrl = location.href; 

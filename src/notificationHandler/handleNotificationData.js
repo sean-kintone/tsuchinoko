@@ -1,41 +1,57 @@
-export function getNotificationElements() {
-    const notificationElements = document.querySelectorAll('.ocean-ntf-ntfitem');
-    console.log(`Found ${notificationElements.length} notification elements`);
-    return Array.from(notificationElements);
-}
-
-export function extractNotificationInfo(element) {
-    const subject = element.querySelector('.ocean-ntf-ntfitem-subject')?.textContent;
-    const space = element.querySelector('.ocean-ntf-ntfitem-space')?.textContent;
-    const detail = element.querySelector('.ocean-ntf-ntfitem-detail span')?.textContent;
-    const date = element.querySelector('.ocean-ntf-ntfitem-date')?.textContent;
-    const user = element.querySelector('.ocean-ntf-ntfitem-user')?.textContent;
-    const isRead = element.classList.contains('ocean-ntf-ntfitem-read');
-    const isImportant = element.classList.contains('ocean-ntf-ntfitem-flagged');
-
-    return { subject, space, detail, date, user, isRead, isImportant };
-}
-
-export function processNotifications() {
-    const notifications = getNotificationElements();
-    notifications.forEach((notification, index) => {
-        const info = extractNotificationInfo(notification);
-        console.log(`Notification ${index + 1}:`, info);
-    });
-}
+import { debounce } from 'lodash-es';
 
 let currentState = new Map();
 
-export function updateCurrentState() {
-    const notifications = getNotificationElements();
+export async function fetchNotifications(size = 5) {
+    try {
+        const response = await fetch('/k/api/ntf/list.json', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                readType: 'ALL',
+                mentioned: true,
+                checkIgnoreMention: false,
+                size: size
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            console.log('Received notification data:', data.result);
+            return {
+                notifications: data.result.ntf,
+                senders: data.result.senders
+            };
+        } else {
+            console.error('Failed to fetch notifications:', data);
+            return { notifications: [], senders: {} };
+        }
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        return { notifications: [], senders: {} };
+    }
+}
+
+export function updateCurrentState(notifications) {
     currentState.clear();
     notifications.forEach(notification => {
-        const id = notification.id;
-        const { isRead, isImportant } = extractNotificationInfo(notification);
-        currentState.set(id, { isRead, isImportant });
+        currentState.set(notification.id, {
+            isRead: notification.read,
+            isImportant: notification.flagged
+        });
     });
 }
 
 export function getCurrentState() {
     return currentState;
 }
+
+export const debouncedFetchNotifications = debounce(fetchNotifications, 1000);

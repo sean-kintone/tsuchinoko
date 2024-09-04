@@ -1,14 +1,33 @@
-export let isModifying = false;
-let sideBarAdded = false;
+let uiInitialized = false;
+
+export function initializeUI(notifications, senders) {
+    if (uiInitialized) return;
+
+    const notificationContainer = document.querySelector('.ocean-ntf-ntflist-content');
+    if (!notificationContainer) return;
+
+    notificationContainer.innerHTML = '';
+    notificationContainer.style.cssText = `
+        display: flex;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    `;
+
+    const sidePanel = createSidePanel();
+    const notificationList = createNotificationList();
+
+    notificationContainer.appendChild(sidePanel);
+    notificationContainer.appendChild(notificationList);
+
+    uiInitialized = true;
+    updateUI(notifications, senders);
+}
 
 function createSidePanel() {
-    if (document.querySelector('.notification-side-panel')) return null;
-    
     const sidePanel = document.createElement('div');
     sidePanel.className = 'notification-side-panel';
     sidePanel.style.cssText = `
-        position: relative;
-        float: left;
         width: 250px;
         height: 100vh;
         background-color: #f0f0f0;
@@ -29,167 +48,83 @@ function createSidePanel() {
     return sidePanel;
 }
 
-export function modifyNotifications() {
-    if (isModifying) return;
-    isModifying = true;
-
-    const notificationContainer = document.querySelector('.ocean-ntf-ntflist-content');
-    if (!notificationContainer) {
-        isModifying = false;
-        return;
-    }
-
-    if (!sideBarAdded) {
-        const sidePanel = createSidePanel();
-        if (sidePanel) {
-            notificationContainer.insertBefore(sidePanel, notificationContainer.firstChild);
-            sideBarAdded = true;
-        }
-    }
-
-    notificationContainer.style.cssText = `
-        display: flex;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-    `;
-
-    let notificationList = notificationContainer.querySelector('.notification-list');
-    if (!notificationList) {
-        notificationList = document.createElement('div');
-        notificationList.className = 'notification-list';
-        notificationList.style.cssText = `
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 20px;
-            box-sizing: border-box;
-        `;
-        notificationContainer.appendChild(notificationList);
-    }
-
-    const notifications = document.querySelectorAll('.ocean-ntf-ntfitem:not(.modified-notification)');
-    notifications.forEach(notification => {
-        modifySingleNotification(notification);
-        notificationList.appendChild(notification);
-    });
-
-    isModifying = false;
-}
-
-function modifySingleNotification(notification) {
-    notification.classList.add('modified-notification');
-
-    notification.style.cssText = `
-        position: relative;
-        width: 100%;
+function createNotificationList() {
+    const notificationList = document.createElement('div');
+    notificationList.className = 'notification-list';
+    notificationList.style.cssText = `
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 20px;
         box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        padding: 15px;
-        margin-bottom: 10px;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        background-color: #ffffff;
-        min-height: 150px; /* Adjust as needed */
     `;
 
-    const contentIconContainer = document.createElement('div');
-    contentIconContainer.className = 'content-icon-container';
-    contentIconContainer.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; width: 100%; flex-grow: 1;';
-
-    const mainContent = document.createElement('div');
-    mainContent.className = 'main-content';
-    mainContent.style.cssText = 'flex-grow: 1; margin-right: 20px;';
-
-    const iconContainer = document.createElement('div');
-    iconContainer.className = 'icon-container';
-    iconContainer.style.cssText = `
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-    `;
-
-    ['subject', 'space', 'detail'].forEach(className => {
-        const element = notification.querySelector(`.ocean-ntf-ntfitem-${className}`);
-        if (element) {
-            element.style.cssText = `margin-bottom: 5px; ${className === 'subject' ? 'font-weight: bold;' : ''}`;
-            mainContent.appendChild(element);
-        }
-    });
-
-    ['flag', 'mark'].forEach(className => {
-        const element = notification.querySelector(`.ocean-ntf-ntfitem-${className}`);
-        if (element) {
-            element.style.cssText = `
-                margin-bottom: 10px;
-                cursor: pointer;
-                opacity: 1 !important;
-                visibility: visible !important;
-                display: block;
-            `;
-            element.onmouseenter = null;
-            element.onmouseleave = null;
-            iconContainer.appendChild(element);
-        }
-    });
-
-    contentIconContainer.appendChild(mainContent);
-    contentIconContainer.appendChild(iconContainer);
-
-    const metaContainer = document.createElement('div');
-    metaContainer.className = 'notification-meta';
-    metaContainer.style.cssText = `
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        margin-top: 10px;
-        width: 100%;
-    `;
-
-    ['date', 'user'].forEach(className => {
-        const element = notification.querySelector(`.ocean-ntf-ntfitem-${className}`);
-        if (element) {
-            element.style.cssText = `${className === 'date' ? 'margin-right: 10px;' : ''}`;
-            metaContainer.appendChild(element);
-        }
-    });
-
-    notification.innerHTML = '';
-    notification.appendChild(contentIconContainer);
-    notification.appendChild(metaContainer);
+    return notificationList;
 }
 
-export function updateNotifications() {
-    const notificationContainer = document.querySelector('.ocean-ntf-ntflist-content');
-    if (!notificationContainer) return;
-
-    const notificationList = notificationContainer.querySelector('.notification-list');
+export function updateUI(notifications, senders) {
+    const notificationList = document.querySelector('.notification-list');
     if (!notificationList) return;
 
-    const notifications = notificationContainer.querySelectorAll('.ocean-ntf-ntfitem');
+    notificationList.innerHTML = '';
     notifications.forEach(notification => {
-        notification.classList.remove('modified-notification');
-        modifySingleNotification(notification);
-        notificationList.appendChild(notification);
+        const notificationElement = createNotificationElement(notification, senders[notification.sender]);
+        notificationList.appendChild(notificationElement);
     });
 }
 
-// Debounce function to limit the rate of function calls
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+function createNotificationElement(notification, sender) {
+    const element = document.createElement('div');
+    element.className = 'notification-item';
+    element.style.cssText = `
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        background-color: ${notification.read ? '#ffffff' : '#f0f8ff'};
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    `;
+
+    // Add hover effect
+    element.addEventListener('mouseenter', () => {
+        element.style.backgroundColor = '#e6e6e6';
+    });
+    element.addEventListener('mouseleave', () => {
+        element.style.backgroundColor = notification.read ? '#ffffff' : '#f0f8ff';
+    });
+
+    // Make notification clickable
+    element.addEventListener('click', () => {
+        if (notification.url) {
+            window.location.href = notification.url;
+        }
+    });
+
+    const content = notification.content;
+    const title = content.title.text;
+    const subTitle = content.subTitle.text;
+    const message = content.message.text;
+    const sentTime = new Date(notification.sentTime).toLocaleString();
+    const senderName = sender ? sender.name : 'Unknown Sender';
+
+    element.innerHTML = `
+        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+            <img src="${content.icon}" alt="Notification Icon" style="width: 24px; height: 24px; margin-right: 10px;">
+            <div>
+                <span style="font-weight: bold; margin-right: 10px;">${title}</span>
+                <span>${subTitle}</span>
+            </div>
+        </div>
+        <p>${message}</p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>${sentTime}</span>
+            <span>${senderName}</span>
+        </div>
+        <div style="margin-top: 5px;">
+            ${notification.flagged ? '<span style="margin-right: 5px;">🚩</span>' : ''}
+            ${notification.mention ? '<span>@</span>' : ''}
+        </div>
+    `;
+
+    return element;
 }
-
-// Debounced version of updateNotifications
-const debouncedUpdateNotifications = debounce(updateNotifications, 250);
-
-// Add event listener for window resize
-window.addEventListener('resize', debouncedUpdateNotifications);
