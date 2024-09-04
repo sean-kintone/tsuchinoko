@@ -55,3 +55,67 @@ export function getCurrentState() {
 }
 
 export const debouncedFetchNotifications = debounce(fetchNotifications, 1000);
+
+let passedData;
+
+const getCybozuData = async () => {
+    if (passedData !== undefined) {
+        return passedData;
+    }
+    return new Promise((resolve, reject) => {
+        const timer = window.setTimeout(() => {
+            document.body.removeEventListener("pass-cybozu-data", handler);
+            reject(new Error("Could not get cybozu.data."));
+        }, 1000);
+        const handler = async (event) => {
+            clearTimeout(timer);
+            passedData = event.detail;
+            resolve(event.detail);
+        };
+        document.body.addEventListener("pass-cybozu-data", handler, {
+            once: true,
+        });
+        const scriptEl = document.createElement("script");
+        scriptEl.src = chrome.runtime.getURL("pass-cybozu-data.js");
+        document.body.appendChild(scriptEl);
+    });
+};
+
+export async function markNotificationAsRead(notification) {
+    try {
+        const cybozuData = await getCybozuData();
+        
+        const payload = {
+            messages: [{
+                read: true,
+                groupKey: notification.groupKey,
+                baseId: notification.id
+            }],
+            __REQUEST_TOKEN__: cybozuData.requestToken
+        };
+        
+        console.log('Marking notification as read with payload:', JSON.stringify(payload, null, 2));
+
+        const response = await fetch('/k/api/ntf/mark.json', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            console.log('Notification marked as read:', notification.id);
+            return true;
+        } else {
+            console.error('Failed to mark notification as read:', data);
+            return false;
+        }
+    } catch (error) {
+        console.error('Error marking notification as read:', error);
+        return false;
+    }
+}

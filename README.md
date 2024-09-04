@@ -22,15 +22,19 @@ This uses:
 
 ## Resources
 
-| File worth looking at                          | Description                                        |
-| ---------------------------------------------- | -------------------------------------------------- |
-| [/src](/src/)                                  | Src Folder containing all Code                     |
-| [App.svelte](/src/App.svelte)                  | Main App content                                   |
-| [/src/components](/src/components/)            | An example component for use in Svelte             |
-| [background.ts](/src/background/background.ts) | Tells Chrome to open the extension as a side-panel |
-| [/src/_locales](/src/_locales/)                | Language Locales for the Extension live here       |
-| [manifest.json](/src/manifest.json)            | Extension settings etc for the browser             |
-| [content.js](/src/content.js)                  | This script runs on notification pages.            |
+| File worth looking at                                       | Description                                                               |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [/src](/src/)                                               | Src Folder containing all Code                                            |
+| [App.svelte](/src/App.svelte)                               | Main App content                                                          |
+| [/src/components](/src/components/)                         | An example component for use in Svelte                                    |
+| [background.ts](/src/background/background.ts)              | Tells Chrome to open the extension as a side-panel                        |
+| [/src/_locales](/src/_locales/)                             | Language Locales for the Extension live here                              |
+| [manifest.json](/src/manifest.json)                         | Extension settings etc for the browser                                    |
+| [content.js](/src/notificationHandler/content.js)           | This script runs on notification pages.                                   |
+| [createUI.js](/src/notificationHandler/createUI.js)         | Initializes the custom UI and calls icons, notification, and sidePanel.js |
+| [icons.js](/src/notificationHandler/icons.js)               | Handles each notification's icon logic and creation                       |
+| [notification.js](/src/notificationHandler/notification.js) | Creates the notification html                                             |
+| [sidePanel.js](/src/notificationHandler/sidePanel.js)       | Creates the sidePanel for task folders                                    |
 
 ## DISCLAIMER
 

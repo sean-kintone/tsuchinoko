@@ -24,12 +24,28 @@
       "exclude_matches": [
         "https://bozuman.cybozu.com/*"
       ],
-      "js": ["build/content.js"]
+      "js": [
+        "build/content.js"
+      ]
     }
   ],
-  "permissions": ["storage", "tabs", "activeTab", "sidePanel"],
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "sidePanel"
+  ],
   "host_permissions": [
     "https://*.kintone.com/*",
     "https://*.cybozu.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["pass-cybozu-data.js"],
+      "matches": [
+        "https://*.kintone.com/*",
+        "https://*.cybozu.com/*"
+      ]
+    }
   ]
 }

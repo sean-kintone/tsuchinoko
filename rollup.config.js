@@ -54,6 +54,11 @@ export default [
 			name: "app",
 			file: "public/build/background.js",
 		},
+		input: 'src/pass-cybozu-data.js',
+		output: {
+			file: 'public/pass-cybozu-data.js',
+			format: 'iife'
+		},
 		plugins: [
 			typescript({ sourceMap: false }),
 			resolve(),

@@ -1,3 +1,5 @@
+import { handleCloseIconClick } from './notification.js';
+
 const iconColor = '#999'; // grey color for inactive state
 const iconHoverColor = '#333'; // darker color for hover state
 const iconSize = '24';
@@ -21,12 +23,12 @@ export function createIcons() {
     return Object.values(icons).join('');
 }
 
-export function addIconEventListeners(element) {
+export function addIconEventListeners(element, notification) {
     element.querySelectorAll('.icon-group .icon').forEach(icon => {
         addIconHoverEffect(icon);
     });
 
-    addIconClickListener(element, '.close-icon', 'Close icon clicked');
+    element.querySelector('.close-icon').addEventListener('click', (e) => handleCloseIconClick(e, notification));
     addIconClickListener(element, '.snooze-icon', 'Snooze icon clicked');
     addIconClickListener(element, '.swoosh-icon', 'Swoosh icon clicked');
     addIconClickListener(element, '.flag-icon', 'Flag icon clicked');
