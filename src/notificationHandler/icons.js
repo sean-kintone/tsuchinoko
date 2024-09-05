@@ -1,4 +1,5 @@
 import { handleCloseIconClick } from './notification.js';
+import { getCybozuData } from './handleNotificationData.js';
 
 const iconColor = '#999'; // grey color for inactive state
 const iconHoverColor = '#333'; // darker color for hover state
@@ -55,34 +56,37 @@ async function handleSwooshIconClick(event, notification, element) {
     event.stopPropagation();
     console.log('Swoosh icon clicked for notification:', notification.id);
 
-    // Find the input fields using the notification ID
-    const metadataInput = element.querySelector(`.metadata-input[data-notification-id="${notification.id}"]`);
-    const inputFieldMetadata = metadataInput ? metadataInput.value : '';
-    
-    const dueDateTimeInput = element.querySelector(`.due-datetime-input[data-notification-id="${notification.id}"]`);
-    const dueDateTimeValue = dueDateTimeInput ? dueDateTimeInput.value : '';
-
-    // Format the datetime for Kintone
-    const formattedDateTime = dueDateTimeValue ? new Date(dueDateTimeValue).toISOString() : notification.sentTime;
-    
-    const body = {
-        app: 16, // Hardcoded app ID
-        record: {
-            baseId: { value: notification.id },
-            groupKey: { value: notification.groupKey },
-            requester: { value: [{ code: notification.sender }] },
-            request_date: { value: notification.sentTime },
-            priority: { value: "normal" }, // Hardcoded as we don't have this info
-            due_date: { value: formattedDateTime },
-            in_charge: { value: [{ code: "uchida" }] }, // Hardcoded as we don't have this info
-            task_content: { value: notification.content.message.text },
-            task_memo: { value: inputFieldMetadata }
-        }
-    };
-
-    console.log('Sending request body:', JSON.stringify(body, null, 2));
-
     try {
+        const cybozuData = await getCybozuData();
+
+        // Find the input fields using the notification ID
+        const metadataInput = element.querySelector(`.metadata-input[data-notification-id="${notification.id}"]`);
+        const inputFieldMetadata = metadataInput ? metadataInput.value : '';
+        
+        const dueDateTimeInput = element.querySelector(`.due-datetime-input[data-notification-id="${notification.id}"]`);
+        const dueDateTimeValue = dueDateTimeInput ? dueDateTimeInput.value : '';
+
+        // Format the datetime for Kintone
+        const formattedDateTime = dueDateTimeValue ? new Date(dueDateTimeValue).toISOString() : notification.sentTime;
+        
+        const body = {
+            app: 16, // Hardcoded app ID
+            record: {
+                baseId: { value: notification.id },
+                groupKey: { value: notification.groupKey },
+                requester: { value: [{ code: notification.sender }] },
+                request_date: { value: notification.sentTime },
+                priority: { value: "normal" }, // Hardcoded as we don't have this info
+                due_date: { value: formattedDateTime },
+                in_charge: { value: [{ code: "uchida" }] }, // Hardcoded as we don't have this info
+                task_content: { value: notification.content.message.text },
+                task_memo: { value: inputFieldMetadata }
+            },
+            __REQUEST_TOKEN__: cybozuData.requestToken
+        };
+
+        console.log('Sending request body:', JSON.stringify(body, null, 2));
+
         const response = await fetch('/k/v1/record.json', {
             method: 'POST',
             headers: {

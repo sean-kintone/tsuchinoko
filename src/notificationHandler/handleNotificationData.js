@@ -58,7 +58,7 @@ export const debouncedFetchNotifications = debounce(fetchNotifications, 1000);
 
 let passedData;
 
-const getCybozuData = async () => {
+export const getCybozuData = async () => {
     if (passedData !== undefined) {
         return passedData;
     }
