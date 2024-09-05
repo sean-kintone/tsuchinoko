@@ -2,22 +2,23 @@ import { createIcons, addIconEventListeners } from './icons.js';
 import { markNotificationAsRead, debouncedRefreshNotifications } from './handleNotificationData.js';
 
 export function createNotificationElement(notification, sender) {
-    // Skip creating elements for read notifications
     if (notification.read) {
-        console.log('Skipping read notification:', notification.id);
         return null;
     }
 
-    console.log('Creating notification element:', notification);
     const element = document.createElement('div');
     element.className = 'notification-item';
     element.dataset.notificationId = notification.id;
+
+    const baseColor = getBackgroundColor(notification.priority, notification.isTask);
+    const hoverColor = getHoverBackgroundColor(baseColor);
+
     element.style.cssText = `
         border: 1px solid #e0e0e0;
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 10px;
-        background-color: #f0f8ff;
+        background-color: ${baseColor};
         cursor: pointer;
         transition: background-color 0.3s ease;
         display: flex;
@@ -25,7 +26,7 @@ export function createNotificationElement(notification, sender) {
         align-items: stretch;
     `;
 
-    addNotificationHoverEffect(element, notification.read);
+    addHoverEffect(element, baseColor, hoverColor);
     addNotificationClickHandler(element, notification);
 
     const content = notification.content;
@@ -105,12 +106,12 @@ function addDateTimeInputHandler(element) {
     });
 }
 
-function addNotificationHoverEffect(element, isRead) {
+function addHoverEffect(element, baseColor, hoverColor) {
     element.addEventListener('mouseenter', () => {
-        element.style.backgroundColor = '#e6e6e6';
+        element.style.backgroundColor = hoverColor;
     });
     element.addEventListener('mouseleave', () => {
-        element.style.backgroundColor = isRead ? '#ffffff' : '#f0f8ff';
+        element.style.backgroundColor = baseColor;
     });
 }
 
@@ -130,13 +131,57 @@ function constructNotificationUrl(notification) {
 
 export async function handleCloseIconClick(event, notification) {
     event.stopPropagation();
-    console.log('Close icon clicked for notification:', notification.id);
-
     const success = await markNotificationAsRead(notification);
     if (success) {
-        console.log('Notification marked as read:', notification.id);
         debouncedRefreshNotifications();
     } else {
         console.error('Failed to mark notification as read');
     }
+}
+
+function getBackgroundColor(priority, isTask) {
+    // Handle cases where priority might be undefined or have a different structure
+    let priorityValue = 'normal';
+    
+    if (priority) {
+        if (typeof priority === 'object' && priority.value) {
+            priorityValue = priority.value.toLowerCase();
+        } else if (typeof priority === 'string') {
+            priorityValue = priority.toLowerCase();
+        }
+    }
+    
+    if (priorityValue === 'urgent') {
+        return '#f78da4'; // Reddish
+    } else if (priorityValue === 'high') {
+        return '#ffa500'; // Orangish
+    } else {
+        if (isTask) {
+            return '#faf3c0'; // yellow for tasks
+        } else {
+            return '#f0f8ff'; // light blue for notifications
+        }
+    }
+}
+
+function getHoverBackgroundColor(baseColor) {
+    // Darken the base color for hover effect
+    return baseColor === '#f0f8ff' ? '#e6e6e6' : LightenDarkenColor(baseColor, -20);
+}
+
+// Helper function to lighten or darken a color
+function LightenDarkenColor(col, amt) {
+    let usePound = false;
+    if (col[0] == "#") {
+        col = col.slice(1);
+        usePound = true;
+    }
+    let num = parseInt(col, 16);
+    let r = (num >> 16) + amt;
+    let b = ((num >> 8) & 0x00FF) + amt;
+    let g = (num & 0x0000FF) + amt;
+    r = r > 255 ? 255 : r < 0 ? 0 : r;
+    b = b > 255 ? 255 : b < 0 ? 0 : b;
+    g = g > 255 ? 255 : g < 0 ? 0 : g;
+    return (usePound ? "#" : "") + (g | (b << 8) | (r << 16)).toString(16);
 }

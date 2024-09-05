@@ -11,7 +11,6 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
     });
 
     async function initializeNotifications() {
-        console.log('Initializing notifications...');
         try {
             const { notifications, senders } = await fetchNotifications();
             if (notifications && senders) {
@@ -50,11 +49,8 @@ if (window.location.href.includes('/k/#/ntf/mention')) {
         if (url !== lastUrl) {
             lastUrl = url;
             if (url.includes('/k/#/ntf/mention')) {
-                console.log('Notification page loaded, initializing...');
                 initializeNotifications();
             }
         }
     }).observe(document, {subtree: true, childList: true});
 }
-
-console.log('Content script loaded and running.');

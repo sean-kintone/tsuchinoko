@@ -1,11 +1,7 @@
-import { getCybozuData } from '../notificationHandler/handleNotificationData.js';
-
 export async function fetchTasks() {
     try {
         const appId = 16; // Consider making this configurable
         const query = '';
-
-        console.log('Fetching tasks from app:', appId);
 
         const rawResponse = await fetch(`/k/v1/records.json?app=${appId}&query=${encodeURIComponent(query)}`, {
             method: 'GET',
@@ -19,7 +15,6 @@ export async function fetchTasks() {
         }
 
         const resp = await rawResponse.json();
-        console.log('Tasks fetched from Kintone:', resp);
         return resp.records;
     } catch (error) {
         console.error('Error in fetchTasks:', error);
@@ -44,6 +39,7 @@ export function convertTasksToNotifications(tasks) {
             sentTime: task.request_date.value,
             read: false, // Tasks are always considered unread in the notification context
             mention: true,
+            isTask: true,
             flagged: false,
             groupKey: `${task.module_type.value.toLowerCase()}:${task.module_id.value}:${task.baseId.value}:`,
             content: {
@@ -59,7 +55,8 @@ export function convertTasksToNotifications(tasks) {
                 icon: getIconForModuleType(task.module_type.value)
             },
             dueDate: task.due_date?.value || '',
-            taskMemo: task.task_memo?.value || ''
+            taskMemo: task.task_memo?.value || '',
+            priority: task.priority || { value: 'normal' } // Add a default priority if it's missing
         };
     }).filter(task => task !== null); // Remove any null tasks
 }

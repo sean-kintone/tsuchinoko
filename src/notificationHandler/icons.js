@@ -55,8 +55,6 @@ function addIconClickListener(element, selector, logMessage) {
 
 async function handleSwooshIconClick(event, notification, element) {
     event.stopPropagation();
-    console.log('Swoosh icon clicked for notification:', notification.id);
-
     try {
         const cybozuData = await getCybozuData();
 
@@ -89,8 +87,6 @@ async function handleSwooshIconClick(event, notification, element) {
             __REQUEST_TOKEN__: cybozuData.requestToken
         };
 
-        console.log('Sending request body:', JSON.stringify(body, null, 2));
-
         const response = await fetch('/k/v1/record.json', {
             method: 'POST',
             headers: {
@@ -105,11 +101,9 @@ async function handleSwooshIconClick(event, notification, element) {
         }
 
         const data = await response.json();
-        console.log('Notification posted to Kintone:', data);
         // Mark the notification as read
         const markAsReadSuccess = await markNotificationAsRead(notification);
         if (markAsReadSuccess) {
-            console.log('Notification marked as read:', notification.id);
             debouncedRefreshNotifications();
         } else {
             console.warn('Failed to mark notification as read:', notification.id);

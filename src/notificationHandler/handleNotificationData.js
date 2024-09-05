@@ -22,17 +22,21 @@ export async function fetchNotifications(size = 5) {
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-
         const data = await response.json();
 
-        if (data.success) {
-            console.log('Received notification data:', data.result);
+        if (data.success && data.result && Array.isArray(data.result.ntf)) {
+            // Add a default priority if it's missing
+            data.result.ntf = data.result.ntf.map(notification => ({
+                ...notification,
+                priority: notification.priority || { value: 'normal' },
+                isTask: false
+            }));
             return {
                 notifications: data.result.ntf,
-                senders: data.result.senders
+                senders: data.result.senders || {}
             };
         } else {
-            console.error('Failed to fetch notifications:', data);
+            console.error('Failed to fetch notifications or unexpected data structure:', data);
             return { notifications: [], senders: {} };
         }
     } catch (error) {
@@ -94,9 +98,6 @@ export async function markNotificationAsRead(notification) {
             }],
             __REQUEST_TOKEN__: cybozuData.requestToken
         };
-
-        console.log('Marking notification as read with payload:', JSON.stringify(payload, null, 2));
-
         const response = await fetch('/k/api/ntf/mark.json', {
             method: 'POST',
             headers: {
@@ -109,7 +110,6 @@ export async function markNotificationAsRead(notification) {
         const data = await response.json();
 
         if (data.success) {
-            console.log('Notification marked as read:', notification.id);
             return true;
         } else {
             console.error('Failed to mark notification as read:', data);
