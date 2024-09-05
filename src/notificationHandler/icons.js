@@ -1,5 +1,6 @@
 import { handleCloseIconClick } from './notification.js';
 import { getCybozuData } from './handleNotificationData.js';
+import { markNotificationAsRead, debouncedRefreshNotifications } from './handleNotificationData.js';
 
 const iconColor = '#999'; // grey color for inactive state
 const iconHoverColor = '#333'; // darker color for hover state
@@ -80,7 +81,10 @@ async function handleSwooshIconClick(event, notification, element) {
                 due_date: { value: formattedDateTime },
                 in_charge: { value: [{ code: "uchida" }] }, // Hardcoded as we don't have this info
                 task_content: { value: notification.content.message.text },
-                task_memo: { value: inputFieldMetadata }
+                task_memo: { value: inputFieldMetadata },
+                module_type: { value: notification.moduleType},
+                module_id: { value: notification.moduleId},
+                folder: { value: "all" }
             },
             __REQUEST_TOKEN__: cybozuData.requestToken
         };
@@ -102,8 +106,14 @@ async function handleSwooshIconClick(event, notification, element) {
 
         const data = await response.json();
         console.log('Notification posted to Kintone:', data);
-        
-        // You might want to update the UI here to indicate success
+        // Mark the notification as read
+        const markAsReadSuccess = await markNotificationAsRead(notification);
+        if (markAsReadSuccess) {
+            console.log('Notification marked as read:', notification.id);
+            debouncedRefreshNotifications();
+        } else {
+            console.warn('Failed to mark notification as read:', notification.id);
+        }
         alert('Notification posted to Kintone successfully!');
     } catch (error) {
         console.error('Error posting notification to Kintone:', error);

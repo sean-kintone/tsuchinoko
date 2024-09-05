@@ -1,7 +1,13 @@
 import { createIcons, addIconEventListeners } from './icons.js';
-import { markNotificationAsRead } from './handleNotificationData.js';
+import { markNotificationAsRead, debouncedRefreshNotifications } from './handleNotificationData.js';
 
 export function createNotificationElement(notification, sender) {
+    // Skip creating elements for read notifications
+    if (notification.read) {
+        console.log('Skipping read notification:', notification.id);
+        return null;
+    }
+
     console.log('Creating notification element:', notification);
     const element = document.createElement('div');
     element.className = 'notification-item';
@@ -11,7 +17,7 @@ export function createNotificationElement(notification, sender) {
         border-radius: 8px;
         padding: 15px;
         margin-bottom: 10px;
-        background-color: ${notification.read ? '#ffffff' : '#f0f8ff'};
+        background-color: #f0f8ff;
         cursor: pointer;
         transition: background-color 0.3s ease;
         display: flex;
@@ -128,14 +134,8 @@ export async function handleCloseIconClick(event, notification) {
 
     const success = await markNotificationAsRead(notification);
     if (success) {
-        const notificationElement = event.target.closest('.notification-item');
-        if (notificationElement) {
-            notificationElement.style.opacity = '0';
-            notificationElement.style.transition = 'opacity 0.3s ease';
-            setTimeout(() => {
-                notificationElement.remove();
-            }, 300);
-        }
+        console.log('Notification marked as read:', notification.id);
+        debouncedRefreshNotifications();
     } else {
         console.error('Failed to mark notification as read');
     }

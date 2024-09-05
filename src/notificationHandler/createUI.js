@@ -1,9 +1,11 @@
+import { fetchNotifications, updateCurrentState } from './handleNotificationData.js';
+import { fetchTasks, convertTasksToNotifications } from '../taskHandler/handleTaskData.js';
 import { createSidePanel } from './sidePanel.js';
 import { createNotificationElement } from './notification.js';
 
 let uiInitialized = false;
 
-export function initializeUI(notifications, senders) {
+export async function initializeUI() {
     if (uiInitialized) return;
 
     const notificationContainer = document.querySelector('.ocean-ntf-ntflist-content');
@@ -24,7 +26,21 @@ export function initializeUI(notifications, senders) {
     notificationContainer.appendChild(notificationList);
 
     uiInitialized = true;
-    updateUI(notifications, senders);
+
+    // Fetch notifications and tasks
+    const [{ notifications, senders }, tasks] = await Promise.all([
+        fetchNotifications(),
+        fetchTasks()
+    ]);
+
+    // Convert tasks to notification format
+    const taskNotifications = convertTasksToNotifications(tasks);
+
+    // Combine notifications and tasks
+    const allNotifications = [...notifications, ...taskNotifications];
+
+    updateCurrentState(allNotifications);
+    updateUI(allNotifications, senders);
 }
 
 function createNotificationList() {
@@ -47,6 +63,8 @@ export function updateUI(notifications, senders) {
     notificationList.innerHTML = '';
     notifications.forEach(notification => {
         const notificationElement = createNotificationElement(notification, senders[notification.sender]);
-        notificationList.appendChild(notificationElement);
+        if (notificationElement) {
+            notificationList.appendChild(notificationElement);
+        }
     });
 }

@@ -1,4 +1,5 @@
 import { debounce } from 'lodash-es';
+import { updateUI } from './createUI.js';
 
 let currentState = new Map();
 
@@ -84,7 +85,7 @@ export const getCybozuData = async () => {
 export async function markNotificationAsRead(notification) {
     try {
         const cybozuData = await getCybozuData();
-        
+
         const payload = {
             messages: [{
                 read: true,
@@ -93,7 +94,7 @@ export async function markNotificationAsRead(notification) {
             }],
             __REQUEST_TOKEN__: cybozuData.requestToken
         };
-        
+
         console.log('Marking notification as read with payload:', JSON.stringify(payload, null, 2));
 
         const response = await fetch('/k/api/ntf/mark.json', {
@@ -119,3 +120,15 @@ export async function markNotificationAsRead(notification) {
         return false;
     }
 }
+
+export async function refreshNotifications() {
+    try {
+        const { notifications, senders } = await fetchNotifications();
+        updateCurrentState(notifications);
+        updateUI(notifications, senders);
+    } catch (error) {
+        console.error('Error refreshing notifications:', error);
+    }
+}
+
+export const debouncedRefreshNotifications = debounce(refreshNotifications, 1000);
