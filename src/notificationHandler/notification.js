@@ -3,9 +3,11 @@ import { markNotificationAsRead, debouncedRefreshNotifications } from './handleN
 
 export function createNotificationElement(notification, sender) {
     if (notification.read) {
+        console.log('Skipping read notification:', notification.id);
         return null;
     }
 
+    console.log('Creating notification element:', notification);
     const element = document.createElement('div');
     element.className = 'notification-item';
     element.dataset.notificationId = notification.id;
@@ -36,7 +38,16 @@ export function createNotificationElement(notification, sender) {
     const sentTime = new Date(notification.sentTime).toLocaleString();
 
     let iconHtml = '';
-    if (notification.moduleType === 'APP') {
+    const priorityValue = getPriorityValue(notification.priority);
+    
+    if (priorityValue === 'urgent') {
+        iconHtml = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FF0000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px;">
+                <path d="M12 2L12 12"></path>
+                <path d="M12 16L12.01 16"></path>
+            </svg>
+        `;
+    } else if (notification.moduleType === 'APP') {
         iconHtml = `<img src="${content.icon}" alt="Notification Icon" style="width: 48px; height: 48px; margin-right: 10px;">`;
     } else if (notification.moduleType === 'PEOPLE') {
         iconHtml = `
@@ -66,10 +77,9 @@ export function createNotificationElement(notification, sender) {
             <input type="datetime-local" class="due-datetime-input" data-notification-id="${notification.id}" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
         </div>
         <div class="icon-group" style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
-            ${createIcons()}
+            ${createIcons(notification.isTask)}
         </div>
     `;
-
     addIconEventListeners(element, notification);
     addMetadataInputHandler(element);
     addDateTimeInputHandler(element);
@@ -140,16 +150,7 @@ export async function handleCloseIconClick(event, notification) {
 }
 
 function getBackgroundColor(priority, isTask) {
-    // Handle cases where priority might be undefined or have a different structure
-    let priorityValue = 'normal';
-    
-    if (priority) {
-        if (typeof priority === 'object' && priority.value) {
-            priorityValue = priority.value.toLowerCase();
-        } else if (typeof priority === 'string') {
-            priorityValue = priority.toLowerCase();
-        }
-    }
+    const priorityValue = getPriorityValue(priority);
     
     if (priorityValue === 'urgent') {
         return '#f78da4'; // Reddish
@@ -162,6 +163,17 @@ function getBackgroundColor(priority, isTask) {
             return '#f0f8ff'; // light blue for notifications
         }
     }
+}
+
+function getPriorityValue(priority) {
+    if (priority) {
+        if (typeof priority === 'object' && priority.value) {
+            return priority.value.toLowerCase();
+        } else if (typeof priority === 'string') {
+            return priority.toLowerCase();
+        }
+    }
+    return 'normal';
 }
 
 function getHoverBackgroundColor(baseColor) {

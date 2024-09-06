@@ -16,21 +16,31 @@ function createIcon(path, name) {
 
 const icons = {
     close: createIcon('<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>', 'close'),
+    checkmark: createIcon('<polyline points="20 6 9 17 4 12"></polyline>', 'checkmark'),
     snooze: createIcon('<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>', 'snooze'),
     swoosh: createIcon('<path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path>', 'swoosh'),
     flag: createIcon('<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line>', 'flag')
 };
 
-export function createIcons() {
-    return Object.values(icons).join('');
+export function createIcons(isTask) {
+    const iconList = [
+        isTask ? icons.checkmark : icons.close,
+        icons.snooze,
+        icons.swoosh,
+        icons.flag
+    ];
+    return iconList.join('');
 }
 
 export function addIconEventListeners(element, notification) {
     element.querySelectorAll('.icon-group .icon').forEach(icon => {
         addIconHoverEffect(icon);
     });
-
-    element.querySelector('.close-icon').addEventListener('click', (e) => handleCloseIconClick(e, notification));
+    if (notification.isTask) {
+        element.querySelector('.checkmark-icon').addEventListener('click', (e) => handleCheckmarkIconClick(e, notification));
+    } else {
+        element.querySelector('.close-icon').addEventListener('click', (e) => handleCloseIconClick(e, notification));
+    }
     addIconClickListener(element, '.snooze-icon', 'Snooze icon clicked');
     element.querySelector('.swoosh-icon').addEventListener('click', (e) => handleSwooshIconClick(e, notification, element));
     addIconClickListener(element, '.flag-icon', 'Flag icon clicked');
@@ -51,6 +61,50 @@ function addIconClickListener(element, selector, logMessage) {
         console.log(logMessage);
         // Add specific functionality here
     });
+}
+
+async function handleCheckmarkIconClick(event, notification) {
+    event.stopPropagation();
+    console.log('Checkmark icon clicked for task:', notification.id);
+    
+    try {
+        const cybozuData = await getCybozuData();
+        
+        // Prepare the payload to update the task status
+        const payload = {
+            app: 16, // Hardcoded app ID for tasks
+            id: notification.id,
+            record: {
+                status: { value: "Done" } // Assuming 'status' is the field name for task status
+            },
+            __REQUEST_TOKEN__: cybozuData.requestToken
+        };
+
+        // Send request to update the task
+        const response = await fetch('/k/v1/record.json', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        console.log('Task marked as complete:', data);
+        // Remove the task from the UI
+        const taskElement = event.target.closest('.notification-item');
+        if (taskElement) {
+            taskElement.remove();
+        }
+        // Refresh the notifications/tasks list
+        debouncedRefreshNotifications();
+    } catch (error) {
+        console.error('Error marking task as complete:', error);
+        alert('Failed to mark task as complete. Please try again.');
+    }
 }
 
 async function handleSwooshIconClick(event, notification, element) {

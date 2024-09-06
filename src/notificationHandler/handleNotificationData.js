@@ -123,11 +123,16 @@ export async function markNotificationAsRead(notification) {
 
 export async function refreshNotifications() {
     try {
-        const { notifications, senders } = await fetchNotifications();
-        updateCurrentState(notifications);
-        updateUI(notifications, senders);
+        const [{ notifications, senders }, tasks] = await Promise.all([
+            fetchNotifications(),
+            fetchTasks()
+        ]);
+        const taskNotifications = convertTasksToNotifications(tasks);
+        const allNotifications = [...notifications, ...taskNotifications];
+        updateCurrentState(allNotifications);
+        updateUI(allNotifications, senders);
     } catch (error) {
-        console.error('Error refreshing notifications:', error);
+        console.error('Error refreshing notifications and tasks:', error);
     }
 }
 
