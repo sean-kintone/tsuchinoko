@@ -57,7 +57,20 @@ export function createNotificationElement(notification, sender) {
             </svg>
         `;
     }
-
+    let memoAndDateHtml = '';
+    if (notification.isTask) {
+        memoAndDateHtml = `
+            <div style="font-size: 0.9em; color: #333; margin-top: 5px;">
+                ${notification.taskMemo ? `<p>メモ: ${notification.taskMemo}</p>` : ''}
+                ${notification.dueDate ? `<p>期限: ${new Date(notification.dueDate).toLocaleString()}</p>` : ''}
+            </div>
+        `;
+    } else {
+        memoAndDateHtml = `
+            <input type="text" class="metadata-input" data-notification-id="${notification.id}" placeholder="メモ" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;">
+            <input type="datetime-local" class="due-datetime-input" data-notification-id="${notification.id}" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+        `;
+    }
     element.innerHTML = `
         <div style="flex: 2; display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; margin-bottom: 10px;">
@@ -73,17 +86,17 @@ export function createNotificationElement(notification, sender) {
             </div>
         </div>
         <div style="flex: 1; display: flex; flex-direction: column; padding: 0 10px;">
-            <input type="text" class="metadata-input" data-notification-id="${notification.id}" placeholder="Add metadata..." style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 5px;">
-            <input type="datetime-local" class="due-datetime-input" data-notification-id="${notification.id}" style="width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+            ${memoAndDateHtml}
         </div>
         <div class="icon-group" style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 10px;">
             ${createIcons(notification.isTask)}
         </div>
     `;
     addIconEventListeners(element, notification);
-    addMetadataInputHandler(element);
-    addDateTimeInputHandler(element);
-
+    if (!notification.isTask) {
+        addMetadataInputHandler(element);
+        addDateTimeInputHandler(element);
+    }
     return element;
 }
 
