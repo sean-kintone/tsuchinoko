@@ -66,21 +66,20 @@ function addIconClickListener(element, selector, logMessage) {
 async function handleCheckmarkIconClick(event, notification) {
     event.stopPropagation();
     console.log('Checkmark icon clicked for task:', notification.id);
-    
+
     try {
         const cybozuData = await getCybozuData();
-        
-        // Prepare the payload to update the task status
         const payload = {
-            app: 16, // Hardcoded app ID for tasks
-            id: notification.id,
+            app: 16,
+            updateKey: {
+                'field': 'baseId',
+                'value': notification.id
+            },
             record: {
-                status: { value: "Done" } // Assuming 'status' is the field name for task status
+                completed: { value: "yes" }
             },
             __REQUEST_TOKEN__: cybozuData.requestToken
         };
-
-        // Send request to update the task
         const response = await fetch('/k/v1/record.json', {
             method: 'PUT',
             headers: {
@@ -94,12 +93,13 @@ async function handleCheckmarkIconClick(event, notification) {
         }
         const data = await response.json();
         console.log('Task marked as complete:', data);
-        // Remove the task from the UI
+
+        // Remove task from UI
         const taskElement = event.target.closest('.notification-item');
         if (taskElement) {
             taskElement.remove();
         }
-        // Refresh the notifications/tasks list
+        // Refresh notifications/tasks
         debouncedRefreshNotifications();
     } catch (error) {
         console.error('Error marking task as complete:', error);
@@ -112,16 +112,16 @@ async function handleSwooshIconClick(event, notification, element) {
     try {
         const cybozuData = await getCybozuData();
 
-        // Find the input fields using the notification ID
+        // get input fields via id
         const metadataInput = element.querySelector(`.metadata-input[data-notification-id="${notification.id}"]`);
         const inputFieldMetadata = metadataInput ? metadataInput.value : '';
-        
+
         const dueDateTimeInput = element.querySelector(`.due-datetime-input[data-notification-id="${notification.id}"]`);
         const dueDateTimeValue = dueDateTimeInput ? dueDateTimeInput.value : '';
 
-        // Format the datetime for Kintone
+        // Format datetime Kintone
         const formattedDateTime = dueDateTimeValue ? new Date(dueDateTimeValue).toISOString() : notification.sentTime;
-        
+
         const body = {
             app: 16, // Hardcoded app ID
             record: {
@@ -134,8 +134,8 @@ async function handleSwooshIconClick(event, notification, element) {
                 in_charge: { value: [{ code: "uchida" }] }, // Hardcoded as we don't have this info
                 task_content: { value: notification.content.message.text },
                 task_memo: { value: inputFieldMetadata },
-                module_type: { value: notification.moduleType},
-                module_id: { value: notification.moduleId},
+                module_type: { value: notification.moduleType },
+                module_id: { value: notification.moduleId },
                 folder: { value: "all" }
             },
             __REQUEST_TOKEN__: cybozuData.requestToken

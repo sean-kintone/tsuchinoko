@@ -1,5 +1,6 @@
 import { debounce } from 'lodash-es';
 import { updateUI } from './createUI.js';
+import { fetchTasks, convertTasksToNotifications } from '../taskHandler/handleTaskData.js';
 
 let currentState = new Map();
 
@@ -89,7 +90,6 @@ export const getCybozuData = async () => {
 export async function markNotificationAsRead(notification) {
     try {
         const cybozuData = await getCybozuData();
-
         const payload = {
             messages: [{
                 read: true,

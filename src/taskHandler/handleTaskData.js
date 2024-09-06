@@ -1,7 +1,7 @@
 export async function fetchTasks() {
     try {
         const appId = 16; // Consider making this configurable
-        const query = '';
+        const query = ''; // Fetch all tasks
 
         const rawResponse = await fetch(`/k/v1/records.json?app=${appId}&query=${encodeURIComponent(query)}`, {
             method: 'GET',
@@ -15,7 +15,8 @@ export async function fetchTasks() {
         }
 
         const resp = await rawResponse.json();
-        return resp.records;
+        // Filter out completed tasks
+        return resp.records.filter(task => task.completed?.value !== 'yes');
     } catch (error) {
         console.error('Error in fetchTasks:', error);
         return [];
